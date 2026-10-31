@@ -1,15 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Scissors, Volume2, Type, Trash2, Play, Pause, SkipBack, SkipForward,
-  Film, Music, Eye, Wand2, Check, X, Upload, Download, Settings,
-  Layers, Palette, Clock, Zap, ChevronRight, ChevronLeft, RotateCcw,
-  Maximize, Minimize, AlertCircle, CheckCircle2, Sparkles
+  Play, Pause, SkipBack, SkipForward,
+  Film, Download, ChevronRight, ChevronLeft, RotateCcw,
+  HelpCircle, X
 } from 'lucide-react';
 import Timeline from './components/Timeline';
 import PreviewPanel from './components/PreviewPanel';
 import ToolPanel from './components/ToolPanel';
 import ExportModal from './components/ExportModal';
+import Onboarding from './components/Onboarding';
 import { Scene, EditingTool } from './types';
 
 const initialScenes: Scene[] = [
@@ -31,6 +31,9 @@ function App() {
   const [showExport, setShowExport] = useState(false);
   const [appliedEffects, setAppliedEffects] = useState<string[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showHelp, setShowHelp] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
   const intervalRef = useRef<number | null>(null);
 
   const totalDuration = scenes.reduce((acc, s) => acc + s.duration, 0);
@@ -52,33 +55,67 @@ function App() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [isPlaying, totalDuration]);
 
+  const showNotification = (msg: string) => {
+    setNotification(msg);
+    setTimeout(() => setNotification(null), 3000);
+  };
+
   const removeBadScenes = () => {
+    const badCount = scenes.filter(s => s.status === 'bad').length;
+    if (badCount === 0) {
+      showNotification('ℹ️ Неудачных кадров не найдено');
+      return;
+    }
     setScenes(prev => prev.filter(s => s.status !== 'bad'));
     setAppliedEffects(prev => [...prev, 'bad-removed']);
+    showNotification(`✅ Удалено ${badCount} неудачных кадров`);
   };
 
   const normalizeFormat = () => {
+    const diffCount = scenes.filter(s => s.format !== '16:9').length;
+    if (diffCount === 0) {
+      showNotification('ℹ️ Все сцены уже в формате 16:9');
+      return;
+    }
     setScenes(prev => prev.map(s => ({ ...s, format: '16:9' })));
     setAppliedEffects(prev => [...prev, 'format-normalized']);
+    showNotification(`✅ Формат ${diffCount} сцен изменён на 16:9`);
   };
 
   const removeLogos = () => {
+    const logoCount = scenes.filter(s => s.hasLogo).length;
+    if (logoCount === 0) {
+      showNotification('ℹ️ Логотипов не обнаружено');
+      return;
+    }
     setScenes(prev => prev.map(s => ({ ...s, hasLogo: false })));
     setAppliedEffects(prev => [...prev, 'logos-removed']);
+    showNotification(`✅ Убрано ${logoCount} логотипов`);
   };
 
   const addSubtitles = () => {
+    if (appliedEffects.includes('subtitles-added')) {
+      showNotification('ℹ️ Субтитры уже добавлены');
+      return;
+    }
     setAppliedEffects(prev => [...prev, 'subtitles-added']);
+    showNotification('✅ Стильные субтитры добавлены');
   };
 
   const addSoundEffects = () => {
+    if (appliedEffects.includes('sfx-added')) {
+      showNotification('ℹ️ Звуковые эффекты уже добавлены');
+      return;
+    }
     setAppliedEffects(prev => [...prev, 'sfx-added']);
+    showNotification('✅ Фоновые звуки добавлены');
   };
 
   const resetAll = () => {
     setScenes(initialScenes);
     setAppliedEffects([]);
     setCurrentTime(0);
+    showNotification('🔄 Проект сброшен');
   };
 
   const goodScenes = scenes.filter(s => s.status !== 'bad');
@@ -87,6 +124,95 @@ function App() {
 
   return (
     <div className="h-screen w-screen bg-gray-950 text-white flex flex-col overflow-hidden">
+      {/* Onboarding */}
+      <AnimatePresence>
+        {showOnboarding && (
+          <Onboarding onComplete={() => setShowOnboarding(false)} />
+        )}
+      </AnimatePresence>
+
+      {/* Notification */}
+      <AnimatePresence>
+        {notification && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -50, x: '-50%' }}
+            className="fixed top-20 left-1/2 z-50 px-5 py-3 rounded-xl bg-gray-800 border border-gray-700 shadow-2xl text-sm font-medium"
+          >
+            {notification}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Help Modal */}
+      <AnimatePresence>
+        {showHelp && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+            onClick={() => setShowHelp(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg bg-gray-900 rounded-2xl border border-gray-800 p-6 space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <HelpCircle className="w-5 h-5 text-violet-400" />
+                  Как пользоваться
+                </h2>
+                <button onClick={() => setShowHelp(false)} className="p-1 hover:bg-gray-800 rounded-lg">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-sm text-gray-300">
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-800/50">
+                  <span className="text-lg">1️⃣</span>
+                  <div>
+                    <p className="font-medium text-white">Выберите инструмент слева</p>
+                    <p className="text-gray-400 text-xs mt-0.5">Нажмите на нужный инструмент в панели</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-800/50">
+                  <span className="text-lg">2️⃣</span>
+                  <div>
+                    <p className="font-medium text-white">Нажмите «Применить»</p>
+                    <p className="text-gray-400 text-xs mt-0.5">Эффект применится ко всему видео</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-800/50">
+                  <span className="text-lg">3️⃣</span>
+                  <div>
+                    <p className="font-medium text-white">Просмотрите результат</p>
+                    <p className="text-gray-400 text-xs mt-0.5">Нажмите ▶️ для воспроизведения или кликните на таймлайн</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-800/50">
+                  <span className="text-lg">4️⃣</span>
+                  <div>
+                    <p className="font-medium text-white">Экспортируйте видео</p>
+                    <p className="text-gray-400 text-xs mt-0.5">Нажмите кнопку «Экспорт» вверху справа</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-gray-800">
+                <p className="text-xs text-gray-500">
+                  💡 Совет: применяйте эффекты по порядку — сначала удалите неудачные кадры, потом нормализуйте формат, затем добавьте субтитры и звуки.
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <header className="h-14 bg-gray-900/80 backdrop-blur-xl border-b border-gray-800 flex items-center px-4 justify-between shrink-0">
         <div className="flex items-center gap-3">
@@ -100,6 +226,15 @@ function App() {
         </div>
 
         <div className="flex items-center gap-2">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowHelp(true)}
+            className="p-2 rounded-lg hover:bg-gray-800 transition-colors"
+            title="Помощь"
+          >
+            <HelpCircle className="w-4 h-4 text-gray-400" />
+          </motion.button>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -170,6 +305,18 @@ function App() {
             >
               {sidebarOpen ? <ChevronLeft className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
             </button>
+
+            {/* Quick action hints */}
+            {appliedEffects.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1 }}
+                className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/10 border border-violet-500/20"
+              >
+                <span className="text-xs text-violet-300">← Выберите инструмент и нажмите «Применить»</span>
+              </motion.div>
+            )}
           </div>
 
           {/* Transport Controls */}

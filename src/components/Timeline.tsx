@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Scene } from '../types';
-import { Trash2, AlertCircle } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 
 interface TimelineProps {
   scenes: Scene[];

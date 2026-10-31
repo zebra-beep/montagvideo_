@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Scene } from '../types';
 import {
   X, Download, CheckCircle2, Film, Clock, HardDrive,
-  Settings, Sparkles, Loader2
+  Sparkles, Loader2
 } from 'lucide-react';
 
 interface ExportModalProps {

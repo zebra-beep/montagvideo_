@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Scene } from '../types';
-import { Subtitles, Music, Volume2 } from 'lucide-react';
+import { Volume2 } from 'lucide-react';
 
 interface PreviewPanelProps {
   scenes: Scene[];
