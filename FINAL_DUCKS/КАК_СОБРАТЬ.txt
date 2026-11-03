@@ -1,0 +1,8 @@
+Скачай все файлы ducklings_partNN.mp4 из этой папки.
+Склейка без потери качества (нужен ffmpeg):
+1) создай файл list.txt со строками:
+file 'ducklings_part00.mp4'
+file 'ducklings_part01.mp4'
+(и так далее по порядку)
+2) ffmpeg -f concat -safe 0 -i list.txt -c copy Five_Small_Ducklings.mp4
+Либо просто смотри части по очереди: между ними нет пропусков.
