@@ -1,0 +1,7 @@
+Скачай все файлы Vanessa_blog_partNN.mp4 из этой папки.
+Склейка без потери качества (нужен ffmpeg):
+1) создай файл list.txt со строками:
+file 'Vanessa_blog_part00.mp4'
+file 'Vanessa_blog_part01.mp4'
+2) ffmpeg -f concat -safe 0 -i list.txt -c copy Vanessa_blog.mp4
+Либо смотри части по очереди: между ними нет пропусков.
